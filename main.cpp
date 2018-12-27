@@ -71,37 +71,35 @@ class BigUInt {
   }
 
   BigUInt operator+(const BigUInt &v) {
-    auto this_length = value_.size();
-    auto that_length = v.value_.size();
-    auto min_length = std::min(this_length, that_length);
+    const auto this_length = value_.size();
+    const auto that_length = v.value_.size();
+    const auto min_length = std::min(this_length, that_length);
 
-    uint64_t this_idx = 0;
-    uint64_t that_idx = 0;
+    uint64_t idx = 0;
     uint64_t j = 0;
     BigUInt r;
     r.value_.clear();
-    while (this_idx < this_length && that_idx < that_length) {
-      auto this_v = value_[this_idx];
-      auto that_v = v.value_[that_idx];
+    while (idx < min_length) {
+      auto this_v = value_[idx];
+      auto that_v = v.value_[idx];
       auto sum_v = this_v + that_v + j;
       r.value_.emplace_back(sum_v % max_each_);
       j = sum_v / max_each_;
-      ++this_idx;
-      ++that_idx;
+      ++idx;
     }
-    while (this_idx < this_length) {
-      auto this_v = value_[this_idx];
+    while (idx < this_length) {
+      auto this_v = value_[idx];
       auto sum_v = this_v + j;
       r.value_.emplace_back(sum_v % max_each_);
       j = sum_v / max_each_;
-      ++this_idx;
+      ++idx;
     }
-    while (that_idx < that_length) {
-      auto that_v = v.value_[that_idx];
+    while (idx < that_length) {
+      auto that_v = v.value_[idx];
       auto sum_v = that_v + j;
       r.value_.emplace_back(sum_v % max_each_);
       j = sum_v / max_each_;
-      ++that_idx;
+      ++idx;
     }
     if (j != 0) {
       r.value_.emplace_back(j);
@@ -315,7 +313,7 @@ BigUInt fibnacci_fast(const uint64_t n) {
 }
 
 #define N 100
-#define REP 10000
+#define REP 1000
 
 int main() {
   // {
@@ -356,8 +354,11 @@ int main() {
   std::cout << "=========" << std::endl;
   {
     Perf p{"fast fibnacci"};
-    auto r = fibnacci_fast(100000);
-    std::cout << p.tik_mili_sec() / 1000 << "s" << std::endl;
+    BigUInt r;
+    for (int n = 0; n < REP; ++n) {
+      r = fibnacci_fast(10000);
+    }
+    std::cout << p.tik_mili_sec() / REP << "ms" << std::endl;
     std::cout << r << std::endl;
   }
   return 0;
