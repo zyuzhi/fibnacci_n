@@ -5,6 +5,7 @@
 #include <limits>
 #include <chrono>
 #include <array>
+#include <unordered_map>
 
 using std::string;
 using std::cout;
@@ -244,12 +245,18 @@ class Mat22 {
     return mat_[i * 2 + j];
   }
 
+  bool operator==(const Mat22 &v) {
+    return mat_ == v.mat_;
+  }
+
   Mat22 operator*(const Mat22 &v) const {
     const auto &t = *this;
-    return Mat22(t(0, 0) * v(0, 0) + t(0, 1) * v(1, 0),
-        t(0, 0) * v(0, 1) + t(0, 1) * v(1, 1),
-        t(1, 0) * v(0, 0) + t(1, 1) * v(1, 0),
-        t(1, 0) * v(0, 1) + t(1, 1) * v(1, 1));
+    auto v11 = t(0, 0) * v(0, 0) + t(0, 1) * v(1, 0);
+    auto v12 = t(0, 0) * v(0, 1) + t(0, 1) * v(1, 1);
+    auto v21 = t(1, 0) * v(0, 0) + t(1, 1) * v(1, 0);
+    // auto v21 = v12;
+    auto v22 = t(1, 0) * v(0, 1) + t(1, 1) * v(1, 1);
+    return Mat22(v11, v12, v21, v22);
   }
 
   Mat22 &operator*=(const Mat22 &v) {
@@ -312,51 +319,54 @@ BigUInt fibnacci_fast(const uint64_t n) {
   return r(0, 0);
 }
 
+BigUInt fibnacci_fast2_inner(const uint64_t n, std::unordered_map<uint64_t, BigUInt> &cache) {
+  if (cache.find(n) != cache.end()) {
+    return cache[n];
+  } else if (n % 2 == 0) {
+    auto n_1 = fibnacci_fast2_inner(n / 2, cache);
+    auto n_2 = fibnacci_fast2_inner(n / 2 - 1, cache);
+    auto n_3 = fibnacci_fast2_inner(n / 2 + 1, cache);
+    return cache[n] = n_1 * (n_2 + n_3);
+  } else {
+    auto n_1 = fibnacci_fast2_inner(n / 2, cache);
+    auto n_2 = fibnacci_fast2_inner(n / 2 + 1, cache);
+    return cache[n] = n_1 * n_1 + n_2 * n_2;
+  }
+}
+
+BigUInt fibnacci_fast2(const uint64_t n) {
+  if (n == 0) {
+    return 1;
+  } else if (n == 1) {
+    return 1;
+  }
+  std::unordered_map<uint64_t, BigUInt> cache;
+  cache[0] = 0;
+  cache[1] = 1;
+  cache[2] = 1;
+  return fibnacci_fast2_inner(n, cache);
+}
+
 #define N 100
 #define REP 10
 
 int main() {
-  // {
-  //   Perf p{"pow"};
-  //   BigUInt r = 1;
-  //   for (int n = 0; n < REP; ++n) {
-  //     BigUInt a = 2;
-  //     BigUInt b = N;
-  //     r = 1;
-  //     for (BigUInt i = 0; i < b; ++i) {
-  //       r *= a;
-  //     }
-  //   }
-  //   std::cout << p.tik_mili_sec() / REP << "ms" << std::endl;
-  //   std::cout << r << std::endl;
-  // }
-  // std::cout << "=========" << std::endl;
-  // {
-  //   Perf p{"fast pow"};
-  //   BigUInt r = 1;
-  //   for (int n = 0; n < REP; ++n) {
-  //     BigUInt a = 2;
-  //     r = fast_power(a, N);
-  //   }
-  //   std::cout << p.tik_mili_sec() / REP << "ms" << std::endl;
-  //   std::cout << r << std::endl;
-  // }
-  // std::cout << "=========" << std::endl;
-  // {
-  //   Perf p{"double pow"};
-  //   double r = 0;
-  //   for (int n = 0; n < REP; ++n) {
-  //     r = std::pow(2, N);
-  //   }
-  //   std::cout << p.tik_mili_sec() / REP << "ms" << std::endl;
-  //   std::cout << r << std::endl;
-  // }
   std::cout << "=========" << std::endl;
   {
     Perf p{"fast fibnacci"};
     BigUInt r;
     for (int n = 0; n < REP; ++n) {
-      r = fibnacci_fast(1000000);
+      r = fibnacci_fast(100000);
+    }
+    std::cout << p.tik_mili_sec() / REP << "ms" << std::endl;
+    std::cout << r << std::endl;
+  }
+  std::cout << "=========" << std::endl;
+  {
+    Perf p{"fast fibnacci2"};
+    BigUInt r;
+    for (int n = 0; n < REP; ++n) {
+      r = fibnacci_fast2(100000);
     }
     std::cout << p.tik_mili_sec() / REP << "ms" << std::endl;
     std::cout << r << std::endl;
