@@ -108,23 +108,23 @@ class BigUInt {
   }
 
   BigUInt operator*(const BigUInt &v) const {
-    auto size = v.value_.size();
+    const auto &this_value = value_;
+    const auto &that_value = v.value_;
+    const auto this_size = this_value.size();
+    const auto that_size = that_value.size();
     BigUInt r;
-    for (size_t i = 0; i < size; ++i) {
-      BigUInt cur_r;
-      uint64_t acc_j = 0;
-      cur_r.value_.resize(i, 0);
-      for (unsigned long that_v : value_) {
-        uint64_t this_v = v.value_[i];
-        uint64_t mul = this_v * that_v + acc_j;
-        uint64_t mod = mul % max_each_;
-        acc_j = mul / max_each_;
-        cur_r.value_.emplace_back(mod);
+    r.value_.resize(this_size + that_size, 0);
+    for (size_t i = 0; i < this_size; ++i) {
+      uint64_t this_v = this_value[i];
+      for (size_t j = 0; j < that_size; ++j) {
+        uint64_t that_v = that_value[j];
+        uint64_t mul = this_v * that_v + r.value_[i + j];
+        r.value_[i + j] = mul % max_each_;
+        r.value_[i + j + 1] += mul / max_each_;
       }
-      if (acc_j != 0) {
-        cur_r.value_.emplace_back(acc_j);
-      }
-      r += cur_r;
+    }
+    while (r.value_.size() > 1 && r.value_.back() == 0) {
+      r.value_.pop_back();
     }
     return r;
   }
@@ -313,7 +313,7 @@ BigUInt fibnacci_fast(const uint64_t n) {
 }
 
 #define N 100
-#define REP 1000
+#define REP 10
 
 int main() {
   // {
@@ -356,7 +356,7 @@ int main() {
     Perf p{"fast fibnacci"};
     BigUInt r;
     for (int n = 0; n < REP; ++n) {
-      r = fibnacci_fast(10000);
+      r = fibnacci_fast(1000000);
     }
     std::cout << p.tik_mili_sec() / REP << "ms" << std::endl;
     std::cout << r << std::endl;
